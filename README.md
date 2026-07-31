@@ -3,8 +3,9 @@
 GuestBridge Rwanda is a hotel search website that I built to help people find and compare hotels. The website gets hotel information from the Booking.com API through RapidAPI and allows users to search for hotels, filter the results, sort them, and save hotels they are interested in.
 
 
-**Live website:** https://www.guestbridgerwanda.tech
-**Demo video:** *Add video link here*
+**Live website:** https://www.guestbridgerwanda.tech    
+
+**Demo video:** * https://www.youtube.com/watch?v=zQIomkaq3DM *
 
 ## What the project does
 
