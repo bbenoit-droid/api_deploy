@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>guestbridgerwanda - Find and compare hotels</title>
+<meta name="description" content="Search hotels by city, compare prices and guest ratings, and save the ones you like.">
+<meta name="author" content="Batsinda Keynes Benoit">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="style.css">
+
+<script src="API_Key.js"></script>
+<script src="config.js"></script>
+<script src="api-service.js"></script>
+<script src="search-service.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="ui.js"></script>
+<script src="auth.js"></script>
+
+<style>
+    /* ---- intro + search ---- */
+    .intro {
+        padding: 36px 0;
+        background: var(--box-bg);
+        border-bottom: 1px solid var(--line);
+    }
+
+    .intro h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .intro p {
+        color: var(--text-light);
+        max-width: 55ch;
+    }
+
+    .search-box {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 24px;
+        padding: 16px;
+        background: var(--box-bg-2);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-big);
+    }
+
+    .search-box .btn {
+        height: 38px;
+    }
+
+    /* guests dropdown */
+    .guest-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .guest-line:last-of-type {
+        border-bottom: none;
+    }
+
+    .guest-line span {
+        display: block;
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    /* row of city shortcut buttons under the search box */
+    .shortcuts {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        font-size: 13px;
+    }
+
+    .shortcut {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-light);
+        background: var(--box-bg);
+        border: 1px solid var(--line-dark);
+        border-radius: var(--radius);
+    }
+
+    .shortcut:hover {
+        color: var(--blue);
+        border-color: var(--blue);
+    }
+
+    .shortcut svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    /* ---- grids ---- */
+    .hotel-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .deal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .city-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    /* ---- city links ---- */
+    .city-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-big);
+        background: var(--box-bg);
+    }
+
+    .city-card:hover {
+        text-decoration: none;
+        border-color: var(--blue);
+    }
+
+    /* blue square with the first letter of the city */
+    .city-letter {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-light);
+        border-radius: var(--radius);
+    }
+
+    .city-card strong {
+        display: block;
+        color: var(--text);
+    }
+
+    .city-card span {
+        font-size: 13px;
+        color: var(--text-light);
+    }
+
+    /* ---- saved strip ---- */
+    .saved-card {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 260px;
+        padding: 10px;
+    }
+
+    .saved-card img {
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: var(--radius);
+        background: var(--box-bg-2);
+    }
+
+    /* ---- newsletter ---- */
+    .signup {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
+
+    .signup h2 {
+        font-size: 19px;
+    }
+
+    .signup-form {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .signup-form .field {
+        min-width: 220px;
+    }
+
+    /* ---- responsive ---- */
+    @media (max-width: 1000px) {
+        .search-box {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .search-box > *:first-child,
+        .search-box > .btn {
+            grid-column: 1 / -1;
+        }
+
+        .hotel-grid,
+        .city-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 800px) {
+        .deal-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .search-box {
+            grid-template-columns: 1fr;
+        }
+
+        .hotel-grid,
+        .deal-grid,
+        .city-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .signup-form {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .signup-form .field,
+        .signup-form .btn {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ===== header ===== -->
+<header class="header">
+    <div class="page header-bar">
+        <a href="index.html" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16"/><path d="M7 8h4M7 12h4M7 16h10M14 8h3M14 12h3"/>
+            </svg>
+            guestbridgerwanda
+        </a>
+
+        <nav class="menu" id="menu" aria-label="Main menu">
+            <a href="index.html" aria-current="page">Home</a>
+            <a href="#hotels">Hotels</a>
+            <a href="#deals">Deals</a>
+            <a href="#saved">Saved</a>
+            <a href="#cities">Cities</a>
+        </nav>
+
+        <div class="header-right">
+            <button class="btn-icon" data-theme-btn type="button" aria-label="Switch to dark mode">
+                <svg data-moon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+                </svg>
+                <svg data-sun class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+                </svg>
+            </button>
+
+            <a class="btn btn-outline btn-small desktop-only" href="#saved">
+                Saved <span class="label label-blue hidden" data-saved-count></span>
+            </a>
+
+            <div data-account></div>
+
+            <button class="btn-icon menu-btn" data-menu-btn type="button" aria-expanded="false" aria-controls="menu" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main id="main">
+<!-- ===== intro + search form ===== -->
+<section class="intro">
+    <div class="page">
+        <h1>Find a place to stay</h1>
+        <p>Search hotels by city, compare prices and guest ratings, then save the ones you like for later.</p>
+
+        <form class="search-box" id="search-form" novalidate>
+            <div class="field">
+                <label for="destination">Where</label>
+                <input type="text" id="destination" placeholder="City or hotel name"
+                       autocomplete="off" role="combobox" aria-expanded="false"
+                       aria-controls="suggestions" aria-autocomplete="list">
+                <div class="dropdown dropdown-scroll" id="suggestions" role="listbox" aria-label="Destination suggestions"></div>
+            </div>
+
+            <div class="field">
+                <label for="checkin">Check in</label>
+                <input type="text" id="checkin" placeholder="Pick a date" readonly>
+            </div>
+
+            <div class="field">
+                <label for="checkout">Check out</label>
+                <input type="text" id="checkout" placeholder="Pick a date" readonly>
+            </div>
+
+            <div class="field">
+                <label for="guests-btn">Guests</label>
+                <button type="button" id="guests-btn" class="btn btn-outline" aria-expanded="false" aria-controls="guests-dropdown"
+                        style="justify-content:flex-start;font-weight:400">2 adults, 1 room</button>
+
+                <div class="dropdown dropdown-right" id="guests-dropdown" style="min-width:280px">
+                    <div class="guest-line">
+                        <div><strong>Adults</strong><span>18 or older</span></div>
+                        <div class="counter">
+                            <button type="button" data-count="adults" data-change="-1" aria-label="Fewer adults">&minus;</button>
+                            <output id="count-adults" aria-live="polite">2</output>
+                            <button type="button" data-count="adults" data-change="1" aria-label="More adults">+</button>
+                        </div>
+                    </div>
+                    <div class="guest-line">
+                        <div><strong>Children</strong><span>Under 18</span></div>
+                        <div class="counter">
+                            <button type="button" data-count="children" data-change="-1" aria-label="Fewer children">&minus;</button>
+                            <output id="count-children" aria-live="polite">0</output>
+                            <button type="button" data-count="children" data-change="1" aria-label="More children">+</button>
+                        </div>
+                    </div>
+                    <div class="guest-line">
+                        <div><strong>Rooms</strong></div>
+                        <div class="counter">
+                            <button type="button" data-count="rooms" data-change="-1" aria-label="Fewer rooms">&minus;</button>
+                            <output id="count-rooms" aria-live="polite">1</output>
+                            <button type="button" data-count="rooms" data-change="1" aria-label="More rooms">+</button>
+                        </div>
+                    </div>
+                    <div class="dropdown-foot">
+                        <button type="button" class="btn btn-main btn-small" id="guests-done">Done</button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-main" id="search-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                </svg>
+                Search
+            </button>
+        </form>
+        <p class="error-msg" id="search-error" style="margin-top:8px" role="alert"></p>
+
+        <div class="shortcuts" id="shortcuts"></div>
+    </div>
+</section>
+
+<!-- ===== saved hotels ===== -->
+<section class="block hidden" id="saved">
+    <div class="page">
+        <div class="block-head">
+            <div>
+                <h2 class="block-title">Saved hotels</h2>
+                <p class="block-note">Stored in this browser only.</p>
+            </div>
+            <button class="btn btn-plain btn-small" id="clear-saved" type="button">Clear all</button>
+        </div>
+        <div class="strip" id="saved-strip"></div>
+    </div>
+</section>
+
+<!-- ===== hotel list ===== -->
+<section class="block" id="hotels">
+    <div class="page">
+        <div class="block-head">
+            <div>
+                <h2 class="block-title">Popular hotels</h2>
+                <p class="block-note">Highly rated stays pulled from the Booking.com API.</p>
+            </div>
+            <button class="btn btn-outline btn-small" id="reload-hotels" type="button">Reload</button>
+        </div>
+        <div class="hidden" id="sample-banner"></div>
+        <div class="hotel-grid" id="hotel-list"></div>
+    </div>
+</section>
+
+<!-- ===== weekend deals ===== -->
+<section class="block" id="deals" style="background:var(--box-bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="page">
+        <h2 class="block-title">Weekend deals</h2>
+        <p class="block-note">Prices for <span id="weekend-dates">the coming weekend</span>.</p>
+        <div class="deal-grid" id="deal-list"></div>
+    </div>
+</section>
+
+<!-- ===== city links ===== -->
+<section class="block" id="cities">
+    <div class="page">
+        <h2 class="block-title">Browse by city</h2>
+        <p class="block-note">Click a city to see what is available right now.</p>
+        <div class="city-grid" id="city-list"></div>
+    </div>
+</section>
+
+<!-- ===== newsletter ===== -->
+<section class="block" style="padding-top:0">
+    <div class="page">
+        <div class="box signup">
+            <div>
+                <h2>Get deal emails</h2>
+                <p class="muted small">One email a week with discounted hotels.</p>
+            </div>
+            <form class="signup-form" id="signup-form" novalidate>
+                <div class="field">
+                    <label class="sr-only" for="signup-email">Email address</label>
+                    <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+                    <p class="error-msg" id="signup-error" role="alert"></p>
+                </div>
+                <button class="btn btn-main" type="submit">Sign up</button>
+            </form>
+        </div>
+    </div>
+</section>
+</main>
+
+<!-- ===== footer ===== -->
+<footer class="footer">
+    <div class="page">
+        <div class="footer-columns">
+            <div>
+                <a href="index.html" class="logo" style="margin-bottom:10px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16"/><path d="M7 8h4M7 12h4M7 16h10M14 8h3M14 12h3"/>
+                    </svg>
+                    guestbridgerwanda
+                </a>
+                <p class="small muted" style="max-width:34ch">
+                    A student project that searches live hotel data and lets you compare and shortlist stays.
+                </p>
+            </div>
+            <div>
+                <h3>Pages</h3>
+                <div class="footer-links">
+                    <a href="#hotels">Popular hotels</a>
+                    <a href="#deals">Weekend deals</a>
+                    <a href="#saved">Saved hotels</a>
+                    <a href="#cities">Browse by city</a>
+                </div>
+            </div>
+            <div>
+                <h3>About</h3>
+                <div class="footer-links">
+                    <a href="https://rapidapi.com/DataCrawler/api/booking-com15" target="_blank" rel="noopener noreferrer">API used</a>
+                    <a href="#main">Back to top</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; <span id="year"></span> guestbridgerwanda - built by Batsinda Keynes Benoit. Hotel data from Booking.com via RapidAPI.</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    'use strict';
+
+    const searchService = new SearchService();
+    const apiService = new ApiService();
+
+    // Cities shown in the "Browse by city" section and as search shortcuts.
+    const CITIES = [
+        { name: 'Kigali',   dest_id: '-2181358', country: 'Rwanda' },
+        { name: 'Gisenyi',  dest_id: '-2180508', country: 'Rwanda' },
+        { name: 'Zanzibar', dest_id: '-1440323', country: 'Tanzania' },
+        { name: 'Nairobi',  dest_id: '-1281269', country: 'Kenya' }
+    ];
+
+    let settings = UI.search.read();
+    let chosenDestination = null;
+    let checkinPicker = null;
+    let checkoutPicker = null;
+
+    /* ---------- guests ---------- */
+    function guestsText() {
+        const parts = [UI.plural(settings.adults, 'adult')];
+        if (settings.children > 0) parts.push(UI.plural(settings.children, 'child', 'children'));
+        parts.push(UI.plural(settings.rooms, 'room'));
+        return parts.join(', ');
+    }
+
+    function limits(key) {
+        if (key === 'children') return { min: 0, max: 8 };
+        if (key === 'rooms') return { min: 1, max: 8 };
+        return { min: 1, max: 16 };
+    }
+
+    function showGuests() {
+        document.getElementById('count-adults').textContent = settings.adults;
+        document.getElementById('count-children').textContent = settings.children;
+        document.getElementById('count-rooms').textContent = settings.rooms;
+        document.getElementById('guests-btn').textContent = guestsText();
+
+        document.querySelectorAll('[data-count]').forEach(btn => {
+            const range = limits(btn.dataset.count);
+            const value = settings[btn.dataset.count];
+            btn.disabled = Number(btn.dataset.change) < 0 ? value <= range.min : value >= range.max;
+        });
+    }
+
+    /* ---------- hotel cards ---------- */
+    function detailsLink(hotelId) {
+        return `Details.html?${UI.search.toQuery({ hotel_id: hotelId }).toString()}`;
+    }
+
+    function saveData(hotel, price) {
+        return UI.escapeHtml(JSON.stringify({
+            id: hotel.id,
+            name: hotel.name || 'Hotel',
+            city: hotel.wishlistName || '',
+            photo: (hotel.photoUrls && hotel.photoUrls[0]) || '',
+            price: price || 0
+        }));
+    }
+
+    // Pulls the values we need out of one item of the API's hotel array.
+    function readHotel(item) {
+        const hotel = item.property || {};
+        const prices = hotel.priceBreakdown || {};
+        const price = prices.grossPrice ? Number(prices.grossPrice.value) || 0 : 0;
+        const oldPrice = prices.strikethroughPrice ? Number(prices.strikethroughPrice.value) || 0 : 0;
+
+        return {
+            hotel: hotel,
+            price: price,
+            oldPrice: oldPrice > price ? oldPrice : 0,
+            currency: (prices.grossPrice && prices.grossPrice.currency) || 'USD',
+            photo: (hotel.photoUrls && hotel.photoUrls[0]) || UI.NO_PHOTO,
+            score: Number(hotel.reviewScore) || 0,
+            stars: Number(hotel.accuratePropertyClass || hotel.propertyClass) || 0,
+            deal: prices.benefitBadges && prices.benefitBadges[0] ? prices.benefitBadges[0].text : ''
+        };
+    }
+
+    function hotelCard(item) {
+        const info = readHotel(item);
+        const link = detailsLink(info.hotel.id);
+        const off = info.oldPrice ? Math.round(((info.oldPrice - info.price) / info.oldPrice) * 100) : 0;
+
+        return `
+            <article class="box hotel-card">
+                <div class="hotel-photo">
+                    <div class="photo-labels">
+                        ${off >= 5 ? `<span class="label label-deal">${off}% off</span>` : ''}
+                        ${info.deal ? `<span class="label">${UI.escapeHtml(info.deal)}</span>` : ''}
+                    </div>
+                    <button class="save-btn" type="button" data-save="${saveData(info.hotel, info.price)}"
+                            aria-pressed="false" aria-label="Save this hotel">
+                        ${UI.icon('heart')}
+                    </button>
+                    <a href="${link}" tabindex="-1" aria-hidden="true">
+                        <img src="${UI.escapeHtml(info.photo)}" alt="" loading="lazy" onerror="UI.usePlaceholder(this)">
+                    </a>
+                </div>
+                <div class="hotel-info">
+                    ${info.stars > 0 ? `<div class="stars" aria-label="${info.stars} star hotel">${'★'.repeat(info.stars)}</div>` : ''}
+                    <h3 class="hotel-name"><a href="${link}">${UI.escapeHtml(info.hotel.name || 'Hotel')}</a></h3>
+                    <p class="hotel-place">
+                        ${UI.icon('pin')}
+                        ${UI.escapeHtml(info.hotel.wishlistName || 'Location not given')}
+                    </p>
+                    ${info.score > 0 ? `
+                        <div class="row" style="gap:8px">
+                            <span class="rating ${UI.ratingClass(info.score)}">${info.score.toFixed(1)}</span>
+                            <span class="rating-word">${UI.escapeHtml(info.hotel.reviewScoreWord || UI.ratingWord(info.score))}</span>
+                            <span class="small muted">${UI.num(info.hotel.reviewCount || 0)} reviews</span>
+                        </div>` : '<span class="label label-outline">No reviews yet</span>'}
+                    <div class="hotel-bottom">
+                        <span></span>
+                        <div class="price">
+                            ${info.oldPrice ? `<div class="price-old">${UI.money(info.oldPrice, info.currency)}</div>` : ''}
+                            <div class="price-new">${UI.money(info.price, info.currency)}</div>
+                            <div class="price-per">per night</div>
+                        </div>
+                    </div>
+                </div>
+            </article>`;
+    }
+
+    function dealCard(item) {
+        const info = readHotel(item);
+        const link = detailsLink(info.hotel.id);
+
+        return `
+            <article class="box hotel-card">
+                <div class="hotel-photo" style="aspect-ratio:16/10">
+                    <div class="photo-labels">
+                        <span class="label label-deal">Weekend price</span>
+                    </div>
+                    <button class="save-btn" type="button" data-save="${saveData(info.hotel, info.price)}"
+                            aria-pressed="false" aria-label="Save this hotel">
+                        ${UI.icon('heart')}
+                    </button>
+                    <a href="${link}" tabindex="-1" aria-hidden="true">
+                        <img src="${UI.escapeHtml(info.photo)}" alt="" loading="lazy" onerror="UI.usePlaceholder(this)">
+                    </a>
+                </div>
+                <div class="hotel-info">
+                    <h3 class="hotel-name"><a href="${link}">${UI.escapeHtml(info.hotel.name || 'Hotel')}</a></h3>
+                    <p class="hotel-place">${UI.icon('pin')} ${UI.escapeHtml(info.hotel.wishlistName || 'Location not given')}</p>
+                    ${info.score > 0 ? `
+                        <div class="row" style="gap:8px">
+                            <span class="rating ${UI.ratingClass(info.score)}">${info.score.toFixed(1)}</span>
+                            <span class="rating-word">${UI.escapeHtml(info.hotel.reviewScoreWord || UI.ratingWord(info.score))}</span>
+                        </div>` : ''}
+                    <div class="hotel-bottom">
+                        <div>
+                            <div class="small muted">2 nights</div>
+                            <div class="bold">${UI.money(info.price * 2, info.currency)}</div>
+                        </div>
+                        <div class="price">
+                            ${info.oldPrice ? `<div class="price-old">${UI.money(info.oldPrice, info.currency)}</div>` : ''}
+                            <div class="price-new">${UI.money(info.price, info.currency)}</div>
+                            <div class="price-per">per night</div>
+                        </div>
+                    </div>
+                </div>
+            </article>`;
+    }
+
+    /* ---------- loading and error blocks ---------- */
+    function loadingBlock(text) {
+        return `<div class="loading"><span class="spinner"></span> ${UI.escapeHtml(text)}</div>`;
+    }
+
+    function errorBlock(text) {
+        return `
+            <div class="notice notice-error">
+                <h3>Could not load</h3>
+                <p>${UI.escapeHtml(text)}</p>
+                <button class="btn btn-outline" type="button" data-retry>Try again</button>
+            </div>`;
+    }
+
+    // Shown above the cards when the API could not be reached and the sample
+    // hotels in api-service.js are being displayed instead.
+    function sampleNotice() {
+        return `
+            <div class="notice notice-warn">
+                <h3>Showing example hotels</h3>
+                <p>
+                    The live hotel API could not be reached, so these are sample
+                    entries and not real prices or availability.
+                </p>
+                <button class="btn btn-outline" type="button" data-retry>Try again</button>
+            </div>`;
+    }
+
+    /* ---------- load hotels and deals ---------- */
+    async function loadHotels() {
+        const hotelList = document.getElementById('hotel-list');
+        const dealList = document.getElementById('deal-list');
+        hotelList.innerHTML = loadingBlock('Loading hotels...');
+        dealList.innerHTML = loadingBlock('Loading deals...');
+        document.getElementById('weekend-dates').textContent = apiService.weekendLabel();
+
+        // allSettled so a failure in one section does not blank out the other.
+        const [hotelResult, dealResult] = await Promise.allSettled([
+            apiService.fetchUniqueProperties(),
+            apiService.fetchWeekendDeals()
+        ]);
+
+        function hotelsFrom(result) {
+            if (result.status !== 'fulfilled') return null;
+            const data = result.value;
+            return data && data.data && Array.isArray(data.data.hotels) ? data.data.hotels : null;
+        }
+
+        const hotels = hotelsFrom(hotelResult);
+        const deals = hotelsFrom(dealResult);
+
+        // api-service.js falls back to sample hotels when the API is unreachable.
+        const usingSamples = [hotelResult, dealResult].some(
+            result => result.status === 'fulfilled' && result.value && result.value.isSample
+        );
+        const sampleBanner = document.getElementById('sample-banner');
+        sampleBanner.innerHTML = usingSamples ? sampleNotice() : '';
+        sampleBanner.classList.toggle('hidden', !usingSamples);
+
+        hotelList.innerHTML = hotels && hotels.length
+            ? hotels.slice(0, 8).map(hotelCard).join('')
+            : errorBlock('The hotel search did not return anything. Check your connection and try again.');
+
+        dealList.innerHTML = deals && deals.length
+            ? deals.slice(0, 3).map(dealCard).join('')
+            : errorBlock('No weekend deals came back from the API this time.');
+
+        UI.markSavedButtons(hotelList);
+        UI.markSavedButtons(dealList);
+    }
+
+    /* ---------- static sections ---------- */
+    function showCities() {
+        document.getElementById('city-list').innerHTML = CITIES.map(city => `
+            <a class="city-card" href="search-results.html?${UI.search.toQuery({ dest_id: city.dest_id, destination: city.name }).toString()}">
+                <span class="city-letter" aria-hidden="true">${UI.escapeHtml(city.name[0])}</span>
+                <span>
+                    <strong>${UI.escapeHtml(city.name)}</strong>
+                    <span>${UI.escapeHtml(city.country)}</span>
+                </span>
+            </a>`).join('');
+    }
+
+    function showShortcuts() {
+        const box = document.getElementById('shortcuts');
+        const recent = UI.recentSearches.list();
+        const items = recent.length ? recent : CITIES;
+
+        box.innerHTML = `<span class="muted">${recent.length ? 'Recent:' : 'Popular:'}</span>` +
+            items.map(item => `
+                <button class="shortcut" type="button"
+                        data-shortcut="${UI.escapeHtml(JSON.stringify({ dest_id: item.dest_id, name: item.name }))}">
+                    ${UI.icon(recent.length ? 'clock' : 'pin')} ${UI.escapeHtml(item.name)}
+                </button>`).join('');
+    }
+
+    function showSaved() {
+        const section = document.getElementById('saved');
+        const strip = document.getElementById('saved-strip');
+        const hotels = UI.savedHotels.list();
+
+        section.classList.toggle('hidden', hotels.length === 0);
+        if (!hotels.length) {
+            strip.innerHTML = '';
+            return;
+        }
+
+        strip.innerHTML = hotels.map(hotel => `
+            <div class="box saved-card">
+                <img src="${UI.escapeHtml(hotel.photo || UI.NO_PHOTO)}" alt="" loading="lazy" onerror="UI.usePlaceholder(this)">
+                <div class="grow">
+                    <a class="bold" href="${detailsLink(hotel.id)}" style="color:var(--text)">${UI.escapeHtml(hotel.name)}</a>
+                    <div class="small muted">${UI.escapeHtml(hotel.city || '')}</div>
+                    ${hotel.price ? `<div class="small bold">${UI.money(hotel.price)} per night</div>` : ''}
+                </div>
+                <button class="close-btn" type="button" data-remove-saved="${UI.escapeHtml(String(hotel.id))}"
+                        aria-label="Remove ${UI.escapeHtml(hotel.name)}">
+                    ${UI.icon('close')}
+                </button>
+            </div>`).join('');
+    }
+
+    /* ---------- destination suggestions ---------- */
+    const destinationInput = document.getElementById('destination');
+    const suggestionBox = document.getElementById('suggestions');
+    let suggestions = [];
+    let highlighted = -1;
+
+    function openSuggestions() {
+        suggestionBox.classList.add('open');
+        destinationInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSuggestions() {
+        suggestionBox.classList.remove('open');
+        destinationInput.setAttribute('aria-expanded', 'false');
+        highlighted = -1;
+    }
+
+    function suggestionIcon(type) {
+        if (type === 'city') return 'city';
+        if (type === 'hotel') return 'hotel';
+        return 'pin';
+    }
+
+    function showSuggestions(results, query) {
+        suggestions = results;
+        highlighted = -1;
+
+        if (!results.length) {
+            suggestionBox.innerHTML = `
+                <div class="suggestion">
+                    <span class="suggestion-text">
+                        <span class="suggestion-name">No matches</span>
+                        <span class="suggestion-place">Nothing found for "${UI.escapeHtml(query)}". Try a city name.</span>
+                    </span>
+                </div>`;
+        } else {
+            suggestionBox.innerHTML = results.map((result, index) => {
+                const place = result.label || [result.city_name, result.country].filter(Boolean).join(', ');
+                return `
+                    <button class="suggestion" type="button" role="option" aria-selected="false" data-index="${index}">
+                        ${UI.icon(suggestionIcon(result.search_type))}
+                        <span class="suggestion-text">
+                            <span class="suggestion-name">${UI.escapeHtml(result.name)}</span>
+                            <span class="suggestion-place">${UI.escapeHtml(place)}</span>
+                        </span>
+                    </button>`;
+            }).join('');
+        }
+        openSuggestions();
+    }
+
+    function highlight(index) {
+        const options = Array.from(suggestionBox.querySelectorAll('.suggestion[data-index]'));
+        if (!options.length) return;
+        highlighted = (index + options.length) % options.length;
+        options.forEach((option, i) => {
+            option.classList.toggle('active', i === highlighted);
+            option.setAttribute('aria-selected', String(i === highlighted));
+        });
+    }
+
+    function pickSuggestion(index) {
+        const result = suggestions[index];
+        if (!result) return;
+
+        // The hotel search endpoint expects city_ufi when the result has one.
+        chosenDestination = {
+            dest_id: result.city_ufi || result.dest_id,
+            name: result.name,
+            hotel_id: result.search_type === 'hotel' ? result.dest_id : null
+        };
+
+        destinationInput.value = result.name;
+        document.getElementById('search-error').classList.remove('shown');
+        closeSuggestions();
+
+        // A single hotel result can go straight to its details page.
+        if (chosenDestination.hotel_id) {
+            window.location.href = detailsLink(chosenDestination.hotel_id);
+        }
+    }
+
+    const lookUpDestination = UI.debounce(async function (query) {
+        try {
+            const response = await searchService.searchDestination(query);
+            if (destinationInput.value.trim() !== query) return; // the user typed more, ignore this reply
+            const results = (response && Array.isArray(response.data) ? response.data : [])
+                .filter(item => item.search_type !== 'landmark')
+                .filter(item => item.city_ufi || item.dest_id)
+                .slice(0, 8);
+            showSuggestions(results, query);
+        } catch (error) {
+            suggestionBox.innerHTML = `
+                <div class="suggestion">
+                    <span class="suggestion-text">
+                        <span class="suggestion-name">Search not working</span>
+                        <span class="suggestion-place">Could not reach the API. Please try again.</span>
+                    </span>
+                </div>`;
+            openSuggestions();
+        }
+    }, 320);
+
+    destinationInput.addEventListener('input', function () {
+        chosenDestination = null;
+        const query = this.value.trim();
+        if (query.length < 2) {
+            closeSuggestions();
+            return;
+        }
+        suggestionBox.innerHTML = `
+            <div class="suggestion">
+                <span class="spinner"></span>
+                <span class="suggestion-text"><span class="suggestion-name">Searching...</span></span>
+            </div>`;
+        openSuggestions();
+        lookUpDestination(query);
+    });
+
+    destinationInput.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            highlight(highlighted + 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            highlight(highlighted - 1);
+        } else if (event.key === 'Enter' && highlighted >= 0) {
+            event.preventDefault();
+            pickSuggestion(highlighted);
+        } else if (event.key === 'Escape') {
+            closeSuggestions();
+        }
+    });
+
+    suggestionBox.addEventListener('click', event => {
+        const option = event.target.closest('.suggestion[data-index]');
+        if (option) pickSuggestion(Number(option.dataset.index));
+    });
+
+    document.addEventListener('click', event => {
+        if (!suggestionBox.contains(event.target) && event.target !== destinationInput) closeSuggestions();
+    });
+
+    /* ---------- guests dropdown ---------- */
+    const guestsDropdown = UI.makeDropdown(
+        document.getElementById('guests-btn'),
+        document.getElementById('guests-dropdown')
+    );
+
+    document.getElementById('guests-dropdown').addEventListener('click', event => {
+        const button = event.target.closest('[data-count]');
+        if (button) {
+            const key = button.dataset.count;
+            const range = limits(key);
+            settings[key] = Math.min(range.max, Math.max(range.min, settings[key] + Number(button.dataset.change)));
+            UI.search.write(settings);
+            showGuests();
+        }
+        if (event.target.closest('#guests-done')) guestsDropdown.close();
+    });
+
+    /* ---------- date pickers ---------- */
+    function startDatePickers() {
+        checkinPicker = flatpickr('#checkin', {
+            minDate: 'today',
+            defaultDate: settings.checkin,
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'D, M j',
+            onChange(dates) {
+                if (!dates.length) return;
+                settings.checkin = UI.isoDate(dates[0]);
+                const earliestCheckout = UI.addDays(dates[0], 1);
+                checkoutPicker.set('minDate', earliestCheckout);
+                if (UI.countNights(settings.checkin, settings.checkout) < 1) {
+                    checkoutPicker.setDate(earliestCheckout, true);
+                }
+                UI.search.write(settings);
+            }
+        });
+
+        checkoutPicker = flatpickr('#checkout', {
+            minDate: UI.addDays(settings.checkin, 1),
+            defaultDate: settings.checkout,
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'D, M j',
+            onChange(dates) {
+                if (!dates.length) return;
+                settings.checkout = UI.isoDate(dates[0]);
+                UI.search.write(settings);
+            }
+        });
+    }
+
+    /* ---------- submit ---------- */
+    document.getElementById('search-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const error = document.getElementById('search-error');
+        const typed = destinationInput.value.trim();
+
+        if (!typed) {
+            error.textContent = 'Please type a destination.';
+            error.classList.add('shown');
+            destinationInput.focus();
+            return;
+        }
+
+        if (!chosenDestination) {
+            error.textContent = 'Please choose a destination from the suggestion list.';
+            error.classList.add('shown');
+            destinationInput.focus();
+            if (typed.length >= 2) lookUpDestination(typed);
+            return;
+        }
+
+        error.classList.remove('shown');
+        UI.search.write(settings);
+        UI.recentSearches.add({ dest_id: chosenDestination.dest_id, name: chosenDestination.name });
+
+        goToResults(chosenDestination.dest_id, chosenDestination.name);
+    });
+
+    function goToResults(destId, name) {
+        const query = UI.search.toQuery({ dest_id: destId, destination: name });
+        window.location.href = `search-results.html?${query.toString()}`;
+    }
+
+    /* ---------- clicks handled for the whole page ---------- */
+    document.addEventListener('click', event => {
+        const shortcut = event.target.closest('[data-shortcut]');
+        if (shortcut) {
+            const city = JSON.parse(shortcut.dataset.shortcut);
+            UI.recentSearches.add(city);
+            goToResults(city.dest_id, city.name);
+            return;
+        }
+
+        const remove = event.target.closest('[data-remove-saved]');
+        if (remove) {
+            UI.savedHotels.remove(remove.dataset.removeSaved);
+            return;
+        }
+
+        if (event.target.closest('[data-retry]') || event.target.closest('#reload-hotels')) {
+            loadHotels();
+        }
+    });
+
+    document.getElementById('clear-saved').addEventListener('click', async () => {
+        const confirmed = await UI.askConfirm({
+            title: 'Clear saved hotels?',
+            body: 'This removes every hotel you saved in this browser.',
+            confirmText: 'Clear all',
+            cancelText: 'Keep them'
+        });
+        if (!confirmed) return;
+        UI.savedHotels.list().forEach(hotel => UI.savedHotels.remove(hotel.id));
+        UI.showMessage('Saved hotels cleared', { kind: 'ok' });
+    });
+
+    document.addEventListener('saved-changed', showSaved);
+    // Logging in or out switches to that user's own saved hotels and recent searches.
+    document.addEventListener('user-changed', () => {
+        showSaved();
+        showShortcuts();
+    });
+
+    /* ---------- newsletter ---------- */
+    document.getElementById('signup-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const input = document.getElementById('signup-email');
+        const value = input.value.trim();
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) {
+            UI.showFieldError(input, value ? 'That email address looks wrong.' : 'Please enter your email.');
+            input.focus();
+            return;
+        }
+
+        UI.showFieldError(input, '');
+        this.reset();
+        UI.showMessage('You are signed up for the weekly email.', { kind: 'ok' });
+    });
+
+    /* ---------- start ---------- */
+    document.getElementById('year').textContent = new Date().getFullYear();
+    startDatePickers();
+    showGuests();
+    showCities();
+    showShortcuts();
+    showSaved();
+    loadHotels();
+})();
+</script>
+</body>
+</html>
